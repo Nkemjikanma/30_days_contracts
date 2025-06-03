@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
+
 import {ClickCounter} from "./ClickCounter.sol";
 import {SaveMyName} from "./SaveMyName.sol";
 import {PollStation} from "./PollStation.sol";
@@ -11,11 +12,7 @@ contract Engine {
     SaveMyName private saveMyName;
     PollStation private pollStation;
 
-    constructor(
-        address _clickCounter,
-        address _saveMyName,
-        address _pollStation
-    ) {
+    constructor(address _clickCounter, address _saveMyName, address _pollStation) {
         clickCounter = ClickCounter(_clickCounter);
         saveMyName = SaveMyName(_saveMyName);
         pollStation = PollStation(_pollStation);
@@ -26,22 +23,13 @@ contract Engine {
             revert Engine__MissingField();
         }
 
-        SaveMyName.Person memory _person = SaveMyName.Person({
-            name: _name,
-            bio: _bio
-        });
+        SaveMyName.Person memory _person = SaveMyName.Person({name: _name, bio: _bio});
 
         saveMyName.setDetails(_person);
     }
 
-    function updateSaveMyName(
-        string calldata _name,
-        string calldata _bio
-    ) public {
-        SaveMyName.Person memory _person = SaveMyName.Person({
-            name: _name,
-            bio: _bio
-        });
+    function updateSaveMyName(string calldata _name, string calldata _bio) public {
+        SaveMyName.Person memory _person = SaveMyName.Person({name: _name, bio: _bio});
 
         saveMyName.updateDetails(_person);
     }
@@ -58,11 +46,10 @@ contract Engine {
         return clickCounter.getNumber(msg.sender);
     }
 
-    /********** POLLSTATION **********/
-    function addCandidate(
-        string calldata _name,
-        string calldata _party
-    ) public {
+    /**
+     * POLLSTATION *********
+     */
+    function addCandidate(string calldata _name, string calldata _party) public {
         pollStation.addCandidate(_name, _party);
     }
 

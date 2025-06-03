@@ -16,8 +16,9 @@ contract SaveMyName is Ownable {
     modifier mustHaveRecords() {
         Person storage _person = persons[msg.sender];
 
-        if (bytes(_person.name).length == 0 || bytes(_person.bio).length == 0)
+        if (bytes(_person.name).length == 0 || bytes(_person.bio).length == 0) {
             revert SaveMyName__NoDetailsFound();
+        }
         _;
     }
 

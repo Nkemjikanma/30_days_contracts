@@ -10,8 +10,7 @@ contract HelperConfig is Script {
 
     NetworkConfig public activeNetworkConfig;
 
-    uint256 public constant DEFAULT_ANVIL_KEY =
-        0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80;
+    uint256 public constant DEFAULT_ANVIL_KEY = 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80;
 
     constructor() {
         // chainId is the id of the current network we are on
@@ -22,22 +21,12 @@ contract HelperConfig is Script {
         }
     }
 
-    function getBaseSepoliaEthConfig()
-        public
-        view
-        returns (NetworkConfig memory)
-    {
+    function getBaseSepoliaEthConfig() public view returns (NetworkConfig memory) {
         return NetworkConfig({engine_owner: vm.envUint("DEV_PRIVATE_KEY")});
     }
 
-    function getOrCreateAnvilEthConfig()
-        public
-        pure
-        returns (NetworkConfig memory)
-    {
-        NetworkConfig memory anvilConfig = NetworkConfig({
-            engine_owner: DEFAULT_ANVIL_KEY
-        });
+    function getOrCreateAnvilEthConfig() public pure returns (NetworkConfig memory) {
+        NetworkConfig memory anvilConfig = NetworkConfig({engine_owner: DEFAULT_ANVIL_KEY});
 
         return anvilConfig;
     }
