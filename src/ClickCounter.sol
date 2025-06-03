@@ -12,8 +12,8 @@ contract ClickCounter is Ownable {
         numbers[account] = numbers[account] + 1;
     }
 
-    function setNumber(uint256 _number) public {
-        numbers[msg.sender] = _number;
+    function setNumber(uint256 _number, address _sender) public {
+        numbers[_sender] = _number;
     }
 
     function getNumber(address sender) public view returns (uint256) {
