@@ -13,22 +13,26 @@ contract SaveMyName is Ownable {
 
     mapping(address => Person) private persons;
 
-    modifier mustHaveRecords() {
-        Person storage _person = persons[msg.sender];
+    modifier mustHaveRecords(address _sender) {
+        Person storage _person = persons[_sender];
 
-        if (bytes(_person.name).length == 0 || bytes(_person.bio).length == 0)
+        if (bytes(_person.name).length == 0 || bytes(_person.bio).length == 0) {
             revert SaveMyName__NoDetailsFound();
+        }
         _;
     }
 
     constructor(address initialOwner) Ownable(initialOwner) {}
 
-    function setDetails(Person calldata _person) public {
-        persons[msg.sender] = _person;
+    function setDetails(Person calldata _person, address _sender) public {
+        persons[_sender] = _person;
     }
 
-    function updateDetails(Person calldata _info) public mustHaveRecords {
-        Person storage _person = persons[msg.sender];
+    function updateDetails(
+        Person calldata _info,
+        address _sender
+    ) public mustHaveRecords(_sender) {
+        Person storage _person = persons[_sender];
 
         if (bytes(_info.bio).length != 0) {
             _person.bio = _info.bio;
@@ -39,7 +43,7 @@ contract SaveMyName is Ownable {
         }
     }
 
-    function getPerson() public view returns (Person memory) {
-        return persons[msg.sender];
+    function getPerson(address _sender) public view returns (Person memory) {
+        return persons[_sender];
     }
 }

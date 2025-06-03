@@ -57,19 +57,12 @@ contract PollStation is Ownable {
 
     constructor(address initialOwner) Ownable(initialOwner) {}
 
-    function addCandidate(
-        string calldata _name,
-        string calldata _party
-    ) external onlyOwner {
+    function addCandidate(string calldata _name, string calldata _party) external onlyOwner {
         if (bytes(_name).length == 0 && bytes(_party).length == 0) {
             revert PollStation__MissingFields();
         }
 
-        Candidate memory newCandidate = Candidate({
-            name: _name,
-            party: _party,
-            number_of_votes: 0
-        });
+        Candidate memory newCandidate = Candidate({name: _name, party: _party, number_of_votes: 0});
 
         candidates.push(newCandidate);
     }
@@ -83,10 +76,7 @@ contract PollStation is Ownable {
         }
     }
 
-    function castVote(
-        uint256 _candidateId,
-        address _sender
-    )
+    function castVote(uint256 _candidateId, address _sender)
         external
         isvotingOpen
         CheckVoted(_sender)
@@ -102,9 +92,12 @@ contract PollStation is Ownable {
         voterToCandidateId[_sender] = _candidateId;
     }
 
-    function getCandidateDetails(
-        uint _candidateId
-    ) external view validateCandidate(_candidateId) returns (Candidate memory) {
+    function getCandidateDetails(uint256 _candidateId)
+        external
+        view
+        validateCandidate(_candidateId)
+        returns (Candidate memory)
+    {
         return candidates[_candidateId];
     }
 
@@ -114,11 +107,8 @@ contract PollStation is Ownable {
 
     function getWinner() external view returns (Candidate memory) {
         Candidate memory winning_candidate = candidates[0];
-        for (uint i = 0; i < candidates.length; i++) {
-            if (
-                candidates[i].number_of_votes >
-                winning_candidate.number_of_votes
-            ) {
+        for (uint256 i = 0; i < candidates.length; i++) {
+            if (candidates[i].number_of_votes > winning_candidate.number_of_votes) {
                 winning_candidate = candidates[i];
             }
         }
@@ -126,9 +116,7 @@ contract PollStation is Ownable {
         return winning_candidate;
     }
 
-    function getUserVote(
-        address _voter
-    ) external view returns (Candidate memory) {
+    function getUserVote(address _voter) external view returns (Candidate memory) {
         return candidates[voterToCandidateId[_voter]];
     }
 
