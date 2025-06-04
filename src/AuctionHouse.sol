@@ -64,12 +64,10 @@ contract AuctionHouse is Ownable {
         uint256 _startingPrice,
         uint256 _durationInMinutes,
         address _seller
-    ) external returns (uint256) {
+    ) external {
         if (
-            bytes(_name).length == 0 ||
-            bytes(_description).length == 0 ||
-            _startingPrice == 0 ||
-            _durationInMinutes == 0
+            bytes(_name).length == 0 || bytes(_description).length == 0 || _startingPrice == 0
+                || _durationInMinutes == 0
         ) {
             revert AuctionHouse__MissingAuctionCreationFields();
         }
@@ -81,9 +79,7 @@ contract AuctionHouse is Ownable {
         newItem.startingPrice = _startingPrice;
         newItem.isApprovedForAuction = true;
         newItem.startTime = block.timestamp;
-        newItem.auctionDuration =
-            block.timestamp +
-            (_durationInMinutes * 1 minutes);
+        newItem.auctionDuration = block.timestamp + (_durationInMinutes * 1 minutes);
         newItem.seller = _seller;
         newItem.isActive = true;
 
@@ -95,11 +91,7 @@ contract AuctionHouse is Ownable {
      *
      *
      */
-    function placeBid(
-        uint256 _auctionId,
-        uint256 _amount,
-        address _bidder
-    ) external {
+    function placeBid(uint256 _auctionId, uint256 _amount, address _bidder) external {
         AuctionItem storage item = auctionItems[_auctionId];
 
         // checks
@@ -122,11 +114,7 @@ contract AuctionHouse is Ownable {
 
         item.bidderToAmount[_bidder] = _amount;
 
-        Bid memory newBid = Bid({
-            bidder: _bidder,
-            amount: _amount,
-            timestamp: block.timestamp
-        });
+        Bid memory newBid = Bid({bidder: _bidder, amount: _amount, timestamp: block.timestamp});
 
         item.bids.push(newBid);
 
@@ -167,7 +155,7 @@ contract AuctionHouse is Ownable {
     }
 
     // cancel auction before bids come in
-    function cancelAuction(uint256 _auctionId, address _user) external view {
+    function cancelAuction(uint256 _auctionId, address _user) external {
         AuctionItem storage item = auctionItems[_auctionId];
 
         // checks
@@ -178,23 +166,14 @@ contract AuctionHouse is Ownable {
         if (item.bids.length > 0) {
             revert AuctionHouse__CantCancelAuctionAterBidPlaced();
         }
+
+        item.isActive = false;
     }
 
-    function getAuctionDetails(
-        uint256 _auctionId
-    )
+    function getAuctionDetails(uint256 _auctionId)
         external
         view
-        returns (
-            string memory,
-            string memory,
-            uint256,
-            uint256,
-            bool,
-            uint256,
-            address,
-            bool
-        )
+        returns (string memory, string memory, uint256, uint256, bool, uint256, address, bool)
     {
         AuctionItem storage item = auctionItems[_auctionId];
 
@@ -215,9 +194,7 @@ contract AuctionHouse is Ownable {
         return item.bids;
     }
 
-    function getBidders(
-        uint256 _auctionId
-    ) external view returns (address[] memory) {
+    function getBidders(uint256 _auctionId) external view returns (address[] memory) {
         AuctionItem storage item = auctionItems[_auctionId];
         return item.bidders;
     }
@@ -241,15 +218,14 @@ contract AuctionHouse is Ownable {
         for (uint256 i = 0; i < auctionId; i++) {
             if (auctionItems[i].bidderToAmount[_user] > 0) {
                 myBids[index] = i;
+                index++;
             }
         }
         return myBids;
     }
 
     // return all auction ids created by user
-    function getMyAuctions(
-        address _user
-    ) external view returns (uint256[] memory) {
+    function getMyAuctions(address _user) external view returns (uint256[] memory) {
         uint256 count = 0;
         for (uint256 i = 0; i < auctionId; i++) {
             if (auctionItems[i].seller == _user) {

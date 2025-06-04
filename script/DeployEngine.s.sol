@@ -5,13 +5,14 @@ import {Script, console} from "forge-std/Script.sol";
 import {ClickCounter} from "../src/ClickCounter.sol";
 import {SaveMyName} from "../src/SaveMyName.sol";
 import {PollStation} from "../src/PollStation.sol";
+import {AuctionHouse} from "../src/AuctionHouse.sol";
 import {Engine} from "../src/Engine.sol";
 import {HelperConfig} from "./HelperConfig.s.sol";
 
 contract DeployEngine is Script {
     Engine public engine;
 
-    function run() external returns (Engine, PollStation, SaveMyName, ClickCounter, HelperConfig) {
+    function run() external returns (Engine, AuctionHouse, PollStation, SaveMyName, ClickCounter, HelperConfig) {
         HelperConfig helperConfig = new HelperConfig();
 
         uint256 engine_owner = helperConfig.activeNetworkConfig();
@@ -21,29 +22,44 @@ contract DeployEngine is Script {
 
         vm.startBroadcast(engine_owner);
 
-        (Engine deployedEngine, ClickCounter clickCounter, SaveMyName saveMyName, PollStation pollStation) =
-            deployContracts(owner);
+        (
+            Engine deployedEngine,
+            ClickCounter clickCounter,
+            SaveMyName saveMyName,
+            PollStation pollStation,
+            AuctionHouse auctionHouse
+        ) = deployContracts(owner);
 
         clickCounter.transferOwnership(address(deployedEngine));
         saveMyName.transferOwnership(address(deployedEngine));
+        pollStation.transferOwnership(address(deployedEngine));
+        auctionHouse.transferOwnership(address(deployedEngine));
 
         vm.stopBroadcast();
 
-        return (deployedEngine, pollStation, saveMyName, clickCounter, helperConfig);
+        return (deployedEngine, auctionHouse, pollStation, saveMyName, clickCounter, helperConfig);
     }
 
     // Test-friendly deployment function - no broadcasting
-    function deployForTest(address testOwner) external returns (Engine, ClickCounter, SaveMyName, PollStation) {
+    function deployForTest(address testOwner)
+        external
+        returns (Engine, ClickCounter, SaveMyName, PollStation, AuctionHouse)
+    {
         return deployContracts(testOwner);
     }
 
     // Internal deployment logic
-    function deployContracts(address owner) internal returns (Engine, ClickCounter, SaveMyName, PollStation) {
+    function deployContracts(address owner)
+        internal
+        returns (Engine, ClickCounter, SaveMyName, PollStation, AuctionHouse)
+    {
         ClickCounter clickCounter = new ClickCounter(owner);
         SaveMyName saveMyName = new SaveMyName(owner);
         PollStation pollStation = new PollStation(owner);
-        Engine deployedEngine = new Engine(address(clickCounter), address(saveMyName), address(pollStation));
+        AuctionHouse auctionHouse = new AuctionHouse(owner);
+        Engine deployedEngine =
+            new Engine(address(clickCounter), address(saveMyName), address(pollStation), address(auctionHouse));
 
-        return (deployedEngine, clickCounter, saveMyName, pollStation);
+        return (deployedEngine, clickCounter, saveMyName, pollStation, auctionHouse);
     }
 }

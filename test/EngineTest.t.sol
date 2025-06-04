@@ -8,10 +8,12 @@ import {HelperConfig} from "../script/HelperConfig.s.sol";
 import {SaveMyName} from "../src/SaveMyName.sol";
 import {Engine} from "../src/Engine.sol";
 import {PollStation} from "../src/PollStation.sol";
+import {AuctionHouse} from "../src/AuctionHouse.sol";
 
 contract EngineTest is Test {
     DeployEngine deployer;
     Engine engine;
+    AuctionHouse auctionHouse;
     PollStation pollStation;
     SaveMyName saveMyName;
     ClickCounter public clickCounter;
@@ -24,13 +26,14 @@ contract EngineTest is Test {
         owner = address(1);
 
         // Deploy contracts using test-friendly method
-        (engine, clickCounter, saveMyName, pollStation) = deployer.deployForTest(owner);
+        (engine, clickCounter, saveMyName, pollStation, auctionHouse) = deployer.deployForTest(owner);
 
         // Transfer ownership as the test owner
         vm.startPrank(owner);
         clickCounter.transferOwnership(address(engine));
         saveMyName.transferOwnership(address(engine));
         pollStation.transferOwnership(address(engine));
+        auctionHouse.transferOwnership(address(engine));
         vm.stopPrank();
     }
 
@@ -43,6 +46,7 @@ contract EngineTest is Test {
         assert(clickCounter.owner() == address(engine));
         assert(saveMyName.owner() == address(engine));
         assert(pollStation.owner() == address(engine));
+        assert(auctionHouse.owner() == address(engine));
     }
 
     /**
