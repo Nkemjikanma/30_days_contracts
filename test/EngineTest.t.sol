@@ -24,8 +24,7 @@ contract EngineTest is Test {
         owner = address(1);
 
         // Deploy contracts using test-friendly method
-        (engine, clickCounter, saveMyName, pollStation) = deployer
-            .deployForTest(owner);
+        (engine, clickCounter, saveMyName, pollStation) = deployer.deployForTest(owner);
 
         // Transfer ownership as the test owner
         vm.startPrank(owner);
@@ -46,7 +45,9 @@ contract EngineTest is Test {
         assert(pollStation.owner() == address(engine));
     }
 
-    /***** ClickCounter ********/
+    /**
+     * ClickCounter *******
+     */
     function testIncrement() public {
         address user = makeAddr("user");
 
@@ -80,7 +81,9 @@ contract EngineTest is Test {
         assertEq(clickCounter.numbers(user), 10);
     }
 
-    /***** SaveMyName ********/
+    /**
+     * SaveMyName *******
+     */
     function testSetMyName() public {
         string memory name = "Nkem";
         string memory bio = "I am a dev";
@@ -119,7 +122,9 @@ contract EngineTest is Test {
         assertEq(person.bio, bio2);
     }
 
-    /***** PollStation ********/
+    /**
+     * PollStation *******
+     */
     function testAddCandidate() public {
         string memory name = "T Pain";
         string memory party = "APC";
@@ -132,8 +137,7 @@ contract EngineTest is Test {
         // check candidate count has increased
         assertEq(pollStation.getTotalCandidates(), initialCandidateCount + 1);
 
-        PollStation.Candidate memory candidate = pollStation
-            .getCandidateDetails(initialCandidateCount);
+        PollStation.Candidate memory candidate = pollStation.getCandidateDetails(initialCandidateCount);
 
         assertEq(candidate.name, name);
         assertEq(candidate.party, party);

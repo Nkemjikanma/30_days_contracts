@@ -4,6 +4,7 @@ pragma solidity ^0.8.26;
 import {ClickCounter} from "./ClickCounter.sol";
 import {SaveMyName} from "./SaveMyName.sol";
 import {PollStation} from "./PollStation.sol";
+import {AuctionHouse} from "./AuctionHouse.sol";
 
 contract Engine {
     error Engine__MissingField();
@@ -11,18 +12,23 @@ contract Engine {
     ClickCounter private clickCounter;
     SaveMyName private saveMyName;
     PollStation private pollStation;
+    AuctionHouse private auctionHouse;
 
     constructor(
         address _clickCounter,
         address _saveMyName,
-        address _pollStation
+        address _pollStation,
+        address _auctionHouse
     ) {
         clickCounter = ClickCounter(_clickCounter);
         saveMyName = SaveMyName(_saveMyName);
         pollStation = PollStation(_pollStation);
+        auctionHouse = AuctionHouse(_auctionHouse);
     }
 
-    /********* ClickCounter **********/
+    /**
+     * ClickCounter *********
+     */
     function increment() public {
         clickCounter.increment(msg.sender);
     }
@@ -35,7 +41,9 @@ contract Engine {
         return clickCounter.getNumber(msg.sender);
     }
 
-    /************ SaveMyName *************/
+    /**
+     * SaveMyName ************
+     */
     function setSaveMyName(string calldata _name, string calldata _bio) public {
         if (bytes(_name).length == 0 || bytes(_bio).length == 0) {
             revert Engine__MissingField();
@@ -104,4 +112,8 @@ contract Engine {
     function hasUserVoted() public view returns (bool) {
         return pollStation.hasUserVoted(msg.sender);
     }
+
+    /**
+     * POLLSTATION *********
+     */
 }
