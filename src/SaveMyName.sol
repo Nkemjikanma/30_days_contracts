@@ -28,10 +28,7 @@ contract SaveMyName is Ownable {
         persons[_sender] = _person;
     }
 
-    function updateDetails(
-        Person calldata _info,
-        address _sender
-    ) public mustHaveRecords(_sender) {
+    function updateDetails(Person calldata _info, address _sender) public mustHaveRecords(_sender) {
         Person storage _person = persons[_sender];
 
         if (bytes(_info.bio).length != 0) {

@@ -8,10 +8,12 @@ import {HelperConfig} from "../script/HelperConfig.s.sol";
 import {SaveMyName} from "../src/SaveMyName.sol";
 import {Engine} from "../src/Engine.sol";
 import {PollStation} from "../src/PollStation.sol";
+import {AuctionHouse} from "../src/AuctionHouse.sol";
 
 contract EngineTest is Test {
     DeployEngine deployer;
     Engine engine;
+    AuctionHouse auctionHouse;
     PollStation pollStation;
     SaveMyName saveMyName;
     ClickCounter public clickCounter;
@@ -24,14 +26,14 @@ contract EngineTest is Test {
         owner = address(1);
 
         // Deploy contracts using test-friendly method
-        (engine, clickCounter, saveMyName, pollStation) = deployer
-            .deployForTest(owner);
+        (engine, clickCounter, saveMyName, pollStation, auctionHouse) = deployer.deployForTest(owner);
 
         // Transfer ownership as the test owner
         vm.startPrank(owner);
         clickCounter.transferOwnership(address(engine));
         saveMyName.transferOwnership(address(engine));
         pollStation.transferOwnership(address(engine));
+        auctionHouse.transferOwnership(address(engine));
         vm.stopPrank();
     }
 
@@ -44,9 +46,12 @@ contract EngineTest is Test {
         assert(clickCounter.owner() == address(engine));
         assert(saveMyName.owner() == address(engine));
         assert(pollStation.owner() == address(engine));
+        assert(auctionHouse.owner() == address(engine));
     }
 
-    /***** ClickCounter ********/
+    /**
+     * ClickCounter *******
+     */
     function testIncrement() public {
         address user = makeAddr("user");
 
@@ -80,7 +85,9 @@ contract EngineTest is Test {
         assertEq(clickCounter.numbers(user), 10);
     }
 
-    /***** SaveMyName ********/
+    /**
+     * SaveMyName *******
+     */
     function testSetMyName() public {
         string memory name = "Nkem";
         string memory bio = "I am a dev";
@@ -119,7 +126,9 @@ contract EngineTest is Test {
         assertEq(person.bio, bio2);
     }
 
-    /***** PollStation ********/
+    /**
+     * PollStation *******
+     */
     function testAddCandidate() public {
         string memory name = "T Pain";
         string memory party = "APC";
@@ -132,8 +141,7 @@ contract EngineTest is Test {
         // check candidate count has increased
         assertEq(pollStation.getTotalCandidates(), initialCandidateCount + 1);
 
-        PollStation.Candidate memory candidate = pollStation
-            .getCandidateDetails(initialCandidateCount);
+        PollStation.Candidate memory candidate = pollStation.getCandidateDetails(initialCandidateCount);
 
         assertEq(candidate.name, name);
         assertEq(candidate.party, party);

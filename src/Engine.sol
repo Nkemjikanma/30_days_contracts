@@ -4,6 +4,7 @@ pragma solidity ^0.8.26;
 import {ClickCounter} from "./ClickCounter.sol";
 import {SaveMyName} from "./SaveMyName.sol";
 import {PollStation} from "./PollStation.sol";
+import {AuctionHouse} from "./AuctionHouse.sol";
 
 contract Engine {
     error Engine__MissingField();
@@ -11,18 +12,18 @@ contract Engine {
     ClickCounter private clickCounter;
     SaveMyName private saveMyName;
     PollStation private pollStation;
+    AuctionHouse private auctionHouse;
 
-    constructor(
-        address _clickCounter,
-        address _saveMyName,
-        address _pollStation
-    ) {
+    constructor(address _clickCounter, address _saveMyName, address _pollStation, address _auctionHouse) {
         clickCounter = ClickCounter(_clickCounter);
         saveMyName = SaveMyName(_saveMyName);
         pollStation = PollStation(_pollStation);
+        auctionHouse = AuctionHouse(_auctionHouse);
     }
 
-    /********* ClickCounter **********/
+    /**
+     * ClickCounter *********
+     */
     function increment() public {
         clickCounter.increment(msg.sender);
     }
@@ -35,28 +36,21 @@ contract Engine {
         return clickCounter.getNumber(msg.sender);
     }
 
-    /************ SaveMyName *************/
+    /**
+     * SaveMyName ************
+     */
     function setSaveMyName(string calldata _name, string calldata _bio) public {
         if (bytes(_name).length == 0 || bytes(_bio).length == 0) {
             revert Engine__MissingField();
         }
 
-        SaveMyName.Person memory _person = SaveMyName.Person({
-            name: _name,
-            bio: _bio
-        });
+        SaveMyName.Person memory _person = SaveMyName.Person({name: _name, bio: _bio});
 
         saveMyName.setDetails(_person, msg.sender);
     }
 
-    function updateSaveMyName(
-        string calldata _name,
-        string calldata _bio
-    ) public {
-        SaveMyName.Person memory _person = SaveMyName.Person({
-            name: _name,
-            bio: _bio
-        });
+    function updateSaveMyName(string calldata _name, string calldata _bio) public {
+        SaveMyName.Person memory _person = SaveMyName.Person({name: _name, bio: _bio});
 
         saveMyName.updateDetails(_person, msg.sender);
     }
@@ -68,10 +62,7 @@ contract Engine {
     /**
      * POLLSTATION *********
      */
-    function addCandidate(
-        string calldata _name,
-        string calldata _party
-    ) public {
+    function addCandidate(string calldata _name, string calldata _party) public {
         pollStation.addCandidate(_name, _party);
     }
 
@@ -83,9 +74,7 @@ contract Engine {
         pollStation.castVote(_candidateId, msg.sender);
     }
 
-    function getCandidateDetails(
-        uint256 _candidateId
-    ) public view returns (PollStation.Candidate memory) {
+    function getCandidateDetails(uint256 _candidateId) public view returns (PollStation.Candidate memory) {
         return pollStation.getCandidateDetails(_candidateId);
     }
 
@@ -103,5 +92,54 @@ contract Engine {
 
     function hasUserVoted() public view returns (bool) {
         return pollStation.hasUserVoted(msg.sender);
+    }
+
+    /**
+     * POLLSTATION *********
+     */
+    function createAuction(
+        string calldata _name,
+        string calldata _description,
+        uint256 _startingPrice,
+        uint256 _durationInMinutes,
+        address _seller
+    ) public {
+        auctionHouse.createAuction(_name, _description, _startingPrice, _durationInMinutes, _seller);
+    }
+
+    function placeBid(uint256 _auctionId, uint256 _amount) public {
+        auctionHouse.placeBid(_auctionId, _amount, msg.sender);
+    }
+
+    function endAuction(uint256 _auctionId) public {
+        auctionHouse.endAuction(_auctionId, msg.sender);
+    }
+
+    function cancelAuction(uint256 _auctionId) public {
+        auctionHouse.cancelAuction(_auctionId, msg.sender);
+    }
+
+    function getAuctionDetails(uint256 _auctionId)
+        public
+        view
+        returns (string memory, string memory, uint256, uint256, bool, uint256, address, bool)
+    {
+        return auctionHouse.getAuctionDetails(_auctionId);
+    }
+
+    function getBids(uint256 _auctionId) public view returns (AuctionHouse.Bid[] memory) {
+        return auctionHouse.getBids(_auctionId);
+    }
+
+    function getBidders(uint256 _auctionId) public view returns (address[] memory) {
+        return auctionHouse.getBidders(_auctionId);
+    }
+
+    function getMyBids() public view returns (uint256[] memory) {
+        return auctionHouse.getMyBids(msg.sender);
+    }
+
+    function getMyAuctions() public view returns (uint256[] memory) {
+        return auctionHouse.getMyAuctions(msg.sender);
     }
 }
