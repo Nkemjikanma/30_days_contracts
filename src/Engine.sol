@@ -95,7 +95,7 @@ contract Engine {
     }
 
     /**
-     * POLLSTATION *********
+     * AuctionHouse *********
      */
     function createAuction(
         string calldata _name,
@@ -103,20 +103,23 @@ contract Engine {
         uint256 _startingPrice,
         uint256 _durationInMinutes,
         address _seller
-    ) public {
-        auctionHouse.createAuction(_name, _description, _startingPrice, _durationInMinutes, _seller);
+    ) public returns (uint256) {
+        uint256 _auctionItemId =
+            auctionHouse.createAuction(_name, _description, _startingPrice, _durationInMinutes, _seller);
+
+        return _auctionItemId;
     }
 
-    function placeBid(uint256 _auctionId, uint256 _amount) public {
-        auctionHouse.placeBid(_auctionId, _amount, msg.sender);
+    function placeBid(uint256 _auctionId, uint256 _amount, address _bidder) public {
+        auctionHouse.placeBid(_auctionId, _amount, _bidder);
     }
 
-    function endAuction(uint256 _auctionId) public {
-        auctionHouse.endAuction(_auctionId, msg.sender);
+    function endAuction(uint256 _auctionId, address _seller) public {
+        auctionHouse.endAuction(_auctionId, _seller);
     }
 
-    function cancelAuction(uint256 _auctionId) public {
-        auctionHouse.cancelAuction(_auctionId, msg.sender);
+    function cancelAuction(uint256 _auctionId, address _seller) public {
+        auctionHouse.cancelAuction(_auctionId, _seller);
     }
 
     function getAuctionDetails(uint256 _auctionId)

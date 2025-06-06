@@ -64,7 +64,7 @@ contract AuctionHouse is Ownable {
         uint256 _startingPrice,
         uint256 _durationInMinutes,
         address _seller
-    ) external {
+    ) external returns (uint256) {
         if (
             bytes(_name).length == 0 || bytes(_description).length == 0 || _startingPrice == 0
                 || _durationInMinutes == 0
@@ -84,6 +84,8 @@ contract AuctionHouse is Ownable {
         newItem.isActive = true;
 
         emit AuctionCreated(_seller, _currentAuctionId);
+
+        return _currentAuctionId;
     }
 
     /**

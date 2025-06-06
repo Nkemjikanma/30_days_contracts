@@ -26,7 +26,8 @@ contract EngineTest is Test {
         owner = address(1);
 
         // Deploy contracts using test-friendly method
-        (engine, clickCounter, saveMyName, pollStation, auctionHouse) = deployer.deployForTest(owner);
+        (engine, clickCounter, saveMyName, pollStation, auctionHouse) = deployer
+            .deployForTest(owner);
 
         // Transfer ownership as the test owner
         vm.startPrank(owner);
@@ -141,7 +142,8 @@ contract EngineTest is Test {
         // check candidate count has increased
         assertEq(pollStation.getTotalCandidates(), initialCandidateCount + 1);
 
-        PollStation.Candidate memory candidate = pollStation.getCandidateDetails(initialCandidateCount);
+        PollStation.Candidate memory candidate = pollStation
+            .getCandidateDetails(initialCandidateCount);
 
         assertEq(candidate.name, name);
         assertEq(candidate.party, party);
@@ -257,5 +259,119 @@ contract EngineTest is Test {
         vm.prank(user);
         bool hasVoted = engine.hasUserVoted();
         assertEq(hasVoted, true);
+    }
+
+    /**
+     * AuctionHouse *******
+     */
+    function testCreateAuction() public {
+        address _seller = makeAddr("seller");
+        string memory _name = "Phone";
+        string memory _description = "New Iphone 25 pro";
+        uint256 _startingPrice = 1;
+        uint256 _duration = 1200;
+
+        uint256 _auctionItemId = createAuctionItemFunction();
+        (
+            string memory name,
+            string memory description,
+            uint256 startingPrice,
+            uint256 highestBid,
+            bool isApproved,
+            uint256 startTime,
+            address seller,
+            bool isActive
+        ) = auctionHouse.getAuctionDetails(_auctionItemId);
+
+        assertEq(name, _name);
+        assertEq(description, _description);
+        assertEq(startingPrice, _startingPrice);
+        assertEq(seller, _seller);
+        assertEq(isActive, true);
+        // assert(auctionDuration, _duration);
+    }
+
+    function testPlaceBid() public {
+        address _bidder = makeAddr("bidder");
+
+        uint256 _auctionItemId = createAuctionItemFunction();
+
+        vm.prank(_bidder);
+        engine.placeBid(_auctionItemId, 2, _bidder);
+
+        AuctionHouse.Bid[] memory bids = engine.getBids(_auctionItemId);
+
+        assertEq(bids.length, 1);
+        assertEq(bids[0].bidder, _bidder);
+        assertEq(bids[0].amount, 2);
+    }
+
+    function testEndAuction() public {
+        address _seller = makeAddr("seller");
+
+        // vm.prank(_seller);
+        uint256 _auctionItemId = createAuctionItemFunction();
+
+        vm.prank(_seller);
+        engine.endAuction(_auctionItemId, _seller);
+
+        (, , , , , , , bool isActive) = auctionHouse.getAuctionDetails(
+            _auctionItemId
+        );
+
+        assertEq(isActive, false);
+    }
+
+    function testCancelAuctionWithWithBidsReverts() public {
+        address _seller = makeAddr("seller");
+        address _bidder = makeAddr("bidder");
+
+        uint256 _auctionItemId = createAuctionItemFunction();
+
+        vm.prank(_bidder);
+        engine.placeBid(_auctionItemId, 2, _bidder);
+        // Verify a bid was placed
+        AuctionHouse.Bid[] memory bids = engine.getBids(_auctionItemId);
+        assertEq(bids.length, 1);
+
+        vm.prank(_seller);
+        vm.expectRevert(
+            AuctionHouse.AuctionHouse__CantCancelAuctionAterBidPlaced.selector
+        );
+        engine.cancelAuction(_auctionItemId, _seller);
+    }
+
+    function testCancelAuctionSucceeds() public {
+        address _seller = makeAddr("seller");
+
+        uint256 _auctionItemId = createAuctionItemFunction();
+
+        vm.prank(_seller);
+        engine.cancelAuction(_auctionItemId, _seller);
+
+        // Verify the auction was cancelled
+        (, , , , , , , bool isActive) = auctionHouse.getAuctionDetails(
+            _auctionItemId
+        );
+        assertEq(isActive, false);
+    }
+
+    function createAuctionItemFunction() public returns (uint256) {
+        address _seller = makeAddr("seller");
+        string memory _name = "Phone";
+        string memory _description = "New Iphone 25 pro";
+        uint256 _startingPrice = 1;
+        uint256 _duration = 1200;
+
+        vm.prank(_seller);
+        uint256 _auctionItemId = engine.createAuction(
+            _name,
+            _description,
+            _startingPrice,
+            _duration,
+            _seller
+        );
+
+        return _auctionItemId;
     }
 }
