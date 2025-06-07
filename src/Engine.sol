@@ -5,6 +5,7 @@ import {ClickCounter} from "./ClickCounter.sol";
 import {SaveMyName} from "./SaveMyName.sol";
 import {PollStation} from "./PollStation.sol";
 import {AuctionHouse} from "./AuctionHouse.sol";
+import {AdminOnly} from "./AdminOnly.sol";
 
 contract Engine {
     error Engine__MissingField();
@@ -13,12 +14,20 @@ contract Engine {
     SaveMyName private saveMyName;
     PollStation private pollStation;
     AuctionHouse private auctionHouse;
+    AdminOnly private adminOnly;
 
-    constructor(address _clickCounter, address _saveMyName, address _pollStation, address _auctionHouse) {
+    constructor(
+        address _clickCounter,
+        address _saveMyName,
+        address _pollStation,
+        address _auctionHouse,
+        address _adminOnly
+    ) {
         clickCounter = ClickCounter(_clickCounter);
         saveMyName = SaveMyName(_saveMyName);
         pollStation = PollStation(_pollStation);
         auctionHouse = AuctionHouse(_auctionHouse);
+        adminOnly = AdminOnly(_adminOnly);
     }
 
     /**
@@ -144,5 +153,45 @@ contract Engine {
 
     function getMyAuctions() public view returns (uint256[] memory) {
         return auctionHouse.getMyAuctions(msg.sender);
+    }
+
+    /**
+     * AdminOnly *******
+     */
+    function addTreasure(uint256 _amount) public {
+        adminOnly.addTreasure(_amount, address(this));
+    }
+
+    function approveWithdrawal(uint256 _amount) public {
+        adminOnly.approveWithdrawal(msg.sender, _amount, address(this));
+    }
+
+    function withdrawTreasure(uint256 _amount) public {
+        adminOnly.withdrawTreasure(_amount, msg.sender);
+    }
+
+    function resetWithdrawStatus() public {
+        adminOnly.resetWithdrawStatus(address(this), msg.sender);
+    }
+
+    function transferOwnership(address _newAdmin) public {
+        adminOnly.transferOwnership(address(this), _newAdmin);
+    }
+
+    // ADMIN ONLY - VIEWS
+    function getTotalTreasure() public view returns (uint256) {
+        return adminOnly.getTotalTreasure();
+    }
+
+    function getWithdrawlAllowance() public view returns (uint256) {
+        return adminOnly.getWithdrawalAllowance(msg.sender);
+    }
+
+    function getHasUserWithdrawn() public view returns(bool) {
+        return adminOnly.hasUserWithdrawn(msg.sender);
+    }
+
+    function getOwner() public view returns(address) {
+        return adminOnly.getOwner();
     }
 }

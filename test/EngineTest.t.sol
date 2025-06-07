@@ -9,10 +9,12 @@ import {SaveMyName} from "../src/SaveMyName.sol";
 import {Engine} from "../src/Engine.sol";
 import {PollStation} from "../src/PollStation.sol";
 import {AuctionHouse} from "../src/AuctionHouse.sol";
+import {AdminOnly} from "../src/AdminOnly.sol";
 
 contract EngineTest is Test {
     DeployEngine deployer;
     Engine engine;
+    AdminOnly adminOnly;
     AuctionHouse auctionHouse;
     PollStation pollStation;
     SaveMyName saveMyName;
@@ -26,7 +28,7 @@ contract EngineTest is Test {
         // owner = address(1);
 
         // Deploy contracts using test-friendly method
-        (engine, clickCounter, saveMyName, pollStation, auctionHouse) = deployer.deployForTest(owner);
+        (engine, clickCounter, saveMyName, pollStation, auctionHouse, adminOnly) = deployer.deployForTest(owner);
 
         // Transfer ownership as the test owner
         vm.startPrank(owner);
@@ -34,6 +36,7 @@ contract EngineTest is Test {
         saveMyName.transferOwnership(address(engine));
         pollStation.transferOwnership(address(engine));
         auctionHouse.transferOwnership(address(engine));
+        adminOnly.transferOwnership(address(engine));
         vm.stopPrank();
     }
 
@@ -47,6 +50,7 @@ contract EngineTest is Test {
         assert(saveMyName.owner() == address(engine));
         assert(pollStation.owner() == address(engine));
         assert(auctionHouse.owner() == address(engine));
+        assert(adminOnly.owner() == address(engine));
     }
 
     /**
@@ -361,3 +365,8 @@ contract EngineTest is Test {
         return _auctionItemId;
     }
 }
+
+/**
+ * AuctionHouse *******
+ */
+// function() {}

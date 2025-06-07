@@ -37,10 +37,7 @@ contract AdminOnly is Ownable {
     event TreasureAdded(uint256 amount);
     event WithdrawalApproved(uint256 amount, address indexed user);
     event WithdrawStatusReset(address indexed user);
-    event OwnershipTransfered(
-        address indexed oldOwner,
-        address indexed newOwner
-    );
+    event OwnershipTransfered(address indexed oldOwner, address indexed newOwner);
 
     constructor(address _owner) Ownable(_owner) {
         treasuryOwner = _owner;
@@ -50,20 +47,13 @@ contract AdminOnly is Ownable {
         treasureChest.totalTreasure = 0;
     }
 
-    function addTreasure(
-        uint256 _treasureAmount,
-        address _sender
-    ) external onlyTreasuryOwner(_sender) {
+    function addTreasure(uint256 _treasureAmount, address _sender) external onlyTreasuryOwner(_sender) {
         treasureChest.totalTreasure += _treasureAmount;
 
         emit TreasureAdded(_treasureAmount);
     }
 
-    function approveWithdrawal(
-        address _user,
-        uint256 _amount,
-        address _owner
-    ) external onlyTreasuryOwner(_owner) {
+    function approveWithdrawal(address _user, uint256 _amount, address _owner) external onlyTreasuryOwner(_owner) {
         if (_amount <= 0) {
             revert AdminOnly__InvalidTreasureAmount();
         }
@@ -87,26 +77,20 @@ contract AdminOnly is Ownable {
         treasureChest.totalTreasure -= _amount;
         treasureChest.hasWithdrawn[_user] = true;
 
-        (bool success, ) = _user.call{value: _amount}("");
+        (bool success,) = _user.call{value: _amount}("");
 
         if (success != true) {
             revert AdminOnly__WithdrawFailed();
         }
     }
 
-    function resetWithdrawStatus(
-        address _owner,
-        address _user
-    ) external onlyTreasuryOwner(_owner) {
+    function resetWithdrawStatus(address _owner, address _user) external onlyTreasuryOwner(_owner) {
         treasureChest.hasWithdrawn[_user] = false;
 
         emit WithdrawStatusReset(_user);
     }
 
-    function transferOwnership(
-        address _owner,
-        address _newOwner
-    ) external onlyTreasuryOwner(_owner) {
+    function transferOwnership(address _owner, address _newOwner) external onlyTreasuryOwner(_owner) {
         if (_newOwner == address(0)) {
             revert AdminOnly__InvalidAddress();
         }
@@ -122,9 +106,7 @@ contract AdminOnly is Ownable {
         return treasureChest.totalTreasure;
     }
 
-    function getWithdrawalAllowance(
-        address _user
-    ) external view returns (uint256) {
+    function getWithdrawalAllowance(address _user) external view returns (uint256) {
         return treasureChest.withdrawAllowance[_user];
     }
 
