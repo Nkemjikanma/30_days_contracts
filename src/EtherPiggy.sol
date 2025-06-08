@@ -111,7 +111,7 @@ contract EtherPiggy is Ownable {
     function getAccountDetails(address _sender)
         external
         view
-        returns (address walletAddress, uint256 totalBalance, uint256 createdAt)
+        returns (address walletAddress, uint256 totalBalance, bool exists, uint256 createdAt)
     {
         if (_sender == address(0)) {
             revert PiggyBank__NotValidAccount();
@@ -127,7 +127,7 @@ contract EtherPiggy is Ownable {
             revert PiggyBank__NotValidAccount();
         }
 
-        return (account.walletAddress, account.totalBalance, account.createdAt);
+        return (account.walletAddress, account.totalBalance, account.exists, account.createdAt);
     }
 
     // get amount deposited at a time
@@ -142,4 +142,6 @@ contract EtherPiggy is Ownable {
 
         return accounts[_accountNumber].deposits[_timestamp];
     }
+
+    receive() external payable {}
 }

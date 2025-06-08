@@ -6,16 +6,19 @@ import {SaveMyName} from "./SaveMyName.sol";
 import {PollStation} from "./PollStation.sol";
 import {AuctionHouse} from "./AuctionHouse.sol";
 import {AdminOnly} from "./AdminOnly.sol";
+import {EtherPiggy} from "./EtherPiggy.sol";
 
 contract Engine {
     error Engine__MissingField();
     error Engine__NotAuthorizedToCallEngine();
+    error Engine__InvalidAmount();
 
     ClickCounter private clickCounter;
     SaveMyName private saveMyName;
     PollStation private pollStation;
     AuctionHouse private auctionHouse;
     AdminOnly private adminOnly;
+    EtherPiggy private etherPiggy;
 
     address public engineOwner;
 
@@ -32,6 +35,7 @@ contract Engine {
         address _pollStation,
         address _auctionHouse,
         address _adminOnly,
+        address _etherPiggy,
         address _engineOwner
     ) {
         clickCounter = ClickCounter(_clickCounter);
@@ -39,6 +43,7 @@ contract Engine {
         pollStation = PollStation(_pollStation);
         auctionHouse = AuctionHouse(_auctionHouse);
         adminOnly = AdminOnly(_adminOnly);
+        etherPiggy = EtherPiggy(payable(_etherPiggy));
 
         engineOwner = _engineOwner;
     }
@@ -66,13 +71,22 @@ contract Engine {
             revert Engine__MissingField();
         }
 
-        SaveMyName.Person memory _person = SaveMyName.Person({name: _name, bio: _bio});
+        SaveMyName.Person memory _person = SaveMyName.Person({
+            name: _name,
+            bio: _bio
+        });
 
         saveMyName.setDetails(_person, msg.sender);
     }
 
-    function updateSaveMyName(string calldata _name, string calldata _bio) public {
-        SaveMyName.Person memory _person = SaveMyName.Person({name: _name, bio: _bio});
+    function updateSaveMyName(
+        string calldata _name,
+        string calldata _bio
+    ) public {
+        SaveMyName.Person memory _person = SaveMyName.Person({
+            name: _name,
+            bio: _bio
+        });
 
         saveMyName.updateDetails(_person, msg.sender);
     }
@@ -84,7 +98,10 @@ contract Engine {
     /**
      * POLLSTATION *********
      */
-    function addCandidate(string calldata _name, string calldata _party) public {
+    function addCandidate(
+        string calldata _name,
+        string calldata _party
+    ) public {
         pollStation.addCandidate(_name, _party);
     }
 
@@ -96,7 +113,9 @@ contract Engine {
         pollStation.castVote(_candidateId, msg.sender);
     }
 
-    function getCandidateDetails(uint256 _candidateId) public view returns (PollStation.Candidate memory) {
+    function getCandidateDetails(
+        uint256 _candidateId
+    ) public view returns (PollStation.Candidate memory) {
         return pollStation.getCandidateDetails(_candidateId);
     }
 
@@ -126,13 +145,22 @@ contract Engine {
         uint256 _durationInMinutes,
         address _seller
     ) public returns (uint256) {
-        uint256 _auctionItemId =
-            auctionHouse.createAuction(_name, _description, _startingPrice, _durationInMinutes, _seller);
+        uint256 _auctionItemId = auctionHouse.createAuction(
+            _name,
+            _description,
+            _startingPrice,
+            _durationInMinutes,
+            _seller
+        );
 
         return _auctionItemId;
     }
 
-    function placeBid(uint256 _auctionId, uint256 _amount, address _bidder) public {
+    function placeBid(
+        uint256 _auctionId,
+        uint256 _amount,
+        address _bidder
+    ) public {
         auctionHouse.placeBid(_auctionId, _amount, _bidder);
     }
 
@@ -144,19 +172,34 @@ contract Engine {
         auctionHouse.cancelAuction(_auctionId, _seller);
     }
 
-    function getAuctionDetails(uint256 _auctionId)
+    function getAuctionDetails(
+        uint256 _auctionId
+    )
         public
         view
-        returns (string memory, string memory, uint256, uint256, bool, uint256, address, bool)
+        returns (
+            string memory,
+            string memory,
+            uint256,
+            uint256,
+            bool,
+            uint256,
+            address,
+            bool
+        )
     {
         return auctionHouse.getAuctionDetails(_auctionId);
     }
 
-    function getBids(uint256 _auctionId) public view returns (AuctionHouse.Bid[] memory) {
+    function getBids(
+        uint256 _auctionId
+    ) public view returns (AuctionHouse.Bid[] memory) {
         return auctionHouse.getBids(_auctionId);
     }
 
-    function getBidders(uint256 _auctionId) public view returns (address[] memory) {
+    function getBidders(
+        uint256 _auctionId
+    ) public view returns (address[] memory) {
         return auctionHouse.getBidders(_auctionId);
     }
 
@@ -175,7 +218,10 @@ contract Engine {
         adminOnly.addTreasure(_amount, address(this));
     }
 
-    function approveWithdrawal(uint256 _amount, address _newTreasurer) public onlyEngineOwner {
+    function approveWithdrawal(
+        uint256 _amount,
+        address _newTreasurer
+    ) public onlyEngineOwner {
         adminOnly.approveWithdrawal(_newTreasurer, _amount);
     }
 
@@ -206,5 +252,36 @@ contract Engine {
 
     function getOwner() public view returns (address) {
         return adminOnly.getOwner();
+    }
+
+    /**
+     * EtherPiggy *******
+     */
+    // onlyEngineOwner is our manager in this case
+    function addAccount(address _newAccountAddress) public onlyEngineOwner {
+        etherPiggy.addAccount(_newAccountAddress);
+    }
+
+    function deposit(uint256 _amount) public payable {
+        if (msg.value != _amount) {
+            revert Engine__InvalidAmount();
+        }
+        etherPiggy.deposit{value: msg.value}(_amount, msg.sender);
+    }
+
+    function withdraw(uint256 _amount) public {
+        etherPiggy.withdraw(msg.sender, _amount);
+    }
+
+    function getAllAccounts() public view returns (address[] memory) {
+        return etherPiggy.getAllAccounts();
+    }
+
+    function getDepositAmount(
+        uint256 _timestamp,
+        address _accountNumber
+    ) public view returns (uint256) {
+        return
+            etherPiggy.getDepositAmountAtGivenTime(_accountNumber, _timestamp);
     }
 }

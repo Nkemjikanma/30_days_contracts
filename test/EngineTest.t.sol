@@ -10,10 +10,12 @@ import {Engine} from "../src/Engine.sol";
 import {PollStation} from "../src/PollStation.sol";
 import {AuctionHouse} from "../src/AuctionHouse.sol";
 import {AdminOnly} from "../src/AdminOnly.sol";
+import {EtherPiggy} from "../src/EtherPiggy.sol";
 
 contract EngineTest is Test {
     DeployEngine deployer;
     Engine engine;
+    EtherPiggy etherPiggy;
     AdminOnly adminOnly;
     AuctionHouse auctionHouse;
     PollStation pollStation;
@@ -28,7 +30,15 @@ contract EngineTest is Test {
         // owner = address(1);
 
         // Deploy contracts using test-friendly method
-        (engine, clickCounter, saveMyName, pollStation, auctionHouse, adminOnly) = deployer.deployForTest(owner);
+        (
+            engine,
+            clickCounter,
+            saveMyName,
+            pollStation,
+            auctionHouse,
+            adminOnly,
+            etherPiggy
+        ) = deployer.deployForTest(owner);
 
         // Transfer ownership as the test owner
         vm.startPrank(owner);
@@ -37,6 +47,7 @@ contract EngineTest is Test {
         pollStation.transferOwnership(address(engine));
         auctionHouse.transferOwnership(address(engine));
         adminOnly.transferOwnership(address(engine));
+        etherPiggy.transferOwnership(address(engine));
         vm.stopPrank();
     }
 
@@ -145,7 +156,8 @@ contract EngineTest is Test {
         // check candidate count has increased
         assertEq(pollStation.getTotalCandidates(), initialCandidateCount + 1);
 
-        PollStation.Candidate memory candidate = pollStation.getCandidateDetails(initialCandidateCount);
+        PollStation.Candidate memory candidate = pollStation
+            .getCandidateDetails(initialCandidateCount);
 
         assertEq(candidate.name, name);
         assertEq(candidate.party, party);
@@ -317,7 +329,9 @@ contract EngineTest is Test {
         vm.prank(_seller);
         engine.endAuction(_auctionItemId, _seller);
 
-        (,,,,,,, bool isActive) = auctionHouse.getAuctionDetails(_auctionItemId);
+        (, , , , , , , bool isActive) = auctionHouse.getAuctionDetails(
+            _auctionItemId
+        );
 
         assertEq(isActive, false);
     }
@@ -335,7 +349,9 @@ contract EngineTest is Test {
         assertEq(bids.length, 1);
 
         vm.prank(_seller);
-        vm.expectRevert(AuctionHouse.AuctionHouse__CantCancelAuctionAterBidPlaced.selector);
+        vm.expectRevert(
+            AuctionHouse.AuctionHouse__CantCancelAuctionAterBidPlaced.selector
+        );
         engine.cancelAuction(_auctionItemId, _seller);
     }
 
@@ -348,7 +364,9 @@ contract EngineTest is Test {
         engine.cancelAuction(_auctionItemId, _seller);
 
         // Verify the auction was cancelled
-        (,,,,,,, bool isActive) = auctionHouse.getAuctionDetails(_auctionItemId);
+        (, , , , , , , bool isActive) = auctionHouse.getAuctionDetails(
+            _auctionItemId
+        );
         assertEq(isActive, false);
     }
 
@@ -360,7 +378,13 @@ contract EngineTest is Test {
         uint256 _duration = 1200;
 
         vm.prank(_seller);
-        uint256 _auctionItemId = engine.createAuction(_name, _description, _startingPrice, _duration, _seller);
+        uint256 _auctionItemId = engine.createAuction(
+            _name,
+            _description,
+            _startingPrice,
+            _duration,
+            _seller
+        );
 
         return _auctionItemId;
     }
@@ -416,5 +440,54 @@ contract EngineTest is Test {
         uint256 balance = adminOnly.getTotalTreasure();
         assertEq(hasWithdrawn, true);
         assertEq(balance, 98);
+    }
+
+    /**
+     * AuctionHouse *******
+     */
+    function testAddAccount() public {
+        address _newAccount = makeAddr("account");
+
+        vm.prank(engine.engineOwner());
+        engine.addAccount(_newAccount);
+
+        (, , bool exists, ) = etherPiggy.getAccountDetails(_newAccount);
+
+        assertEq(exists, true);
+    }
+
+    function testDeposit() public {
+        address _account = makeAddr("account");
+        uint256 _amount = 1000;
+
+        vm.prank(engine.engineOwner());
+        engine.addAccount(_account);
+
+        vm.deal(_account, _amount);
+        vm.prank(_account);
+        engine.deposit{value: 100}(100);
+
+        (, uint256 totalBalance, , ) = etherPiggy.getAccountDetails(_account);
+
+        assertEq(totalBalance, 100);
+    }
+
+    function testWithdraw() public {
+        address _account = makeAddr("account");
+        uint256 _amount = 1000;
+
+        vm.prank(engine.engineOwner());
+        engine.addAccount(_account);
+
+        vm.deal(_account, _amount);
+        vm.prank(_account);
+        engine.deposit{value: 100}(100);
+
+        vm.prank(_account);
+        engine.withdraw(10);
+
+        (, uint256 totalBalance, , ) = etherPiggy.getAccountDetails(_account);
+
+        assertEq(totalBalance, 90);
     }
 }
