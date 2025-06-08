@@ -38,10 +38,7 @@ contract AdminOnly is Ownable {
     event TreasureAdded(uint256 amount);
     event WithdrawalApproved(uint256 amount, address indexed user);
     event WithdrawStatusReset(address indexed user);
-    event OwnershipTransfered(
-        address indexed oldOwner,
-        address indexed newOwner
-    );
+    event OwnershipTransfered(address indexed oldOwner, address indexed newOwner);
 
     constructor(address _owner) Ownable(_owner) {
         treasuryOwner = _owner;
@@ -81,7 +78,7 @@ contract AdminOnly is Ownable {
         treasureChest.totalTreasure -= _amount;
         treasureChest.hasWithdrawn[_user] = true;
 
-        (bool success, ) = _user.call{value: _amount}("");
+        (bool success,) = _user.call{value: _amount}("");
 
         if (success != true) {
             revert AdminOnly__WithdrawFailed();
@@ -110,9 +107,7 @@ contract AdminOnly is Ownable {
         return treasureChest.totalTreasure;
     }
 
-    function getWithdrawalAllowance(
-        address _user
-    ) external view returns (uint256) {
+    function getWithdrawalAllowance(address _user) external view returns (uint256) {
         return treasureChest.withdrawAllowance[_user];
     }
 
