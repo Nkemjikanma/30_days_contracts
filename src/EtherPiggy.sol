@@ -8,6 +8,7 @@ contract EtherPiggy is Ownable {
     error PiggBank__MemberAlreadyExists();
 
     address public bankManager;
+
     struct AccountDetail {
         address walletAddress;
         uint256 totalBalance;
