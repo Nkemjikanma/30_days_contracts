@@ -43,11 +43,7 @@ contract EtherPiggy is Ownable {
 
     event AccountCreated(address indexed _accountNumber);
     event DepositAlert(address indexed _sender, uint256 _amount);
-    event WithdrawalAlert(
-        address indexed _sender,
-        uint256 _amount,
-        uint256 _timestamp
-    );
+    event WithdrawalAlert(address indexed _sender, uint256 _amount, uint256 _timestamp);
 
     constructor(address _initialOwner) Ownable(_initialOwner) {
         bankManager = _initialOwner;
@@ -71,10 +67,7 @@ contract EtherPiggy is Ownable {
         emit AccountCreated(_accountAddress);
     }
 
-    function deposit(
-        uint256 _amount,
-        address _sender
-    ) external payable onlyAccountHolder(_sender) {
+    function deposit(uint256 _amount, address _sender) external payable onlyAccountHolder(_sender) {
         if (_amount <= 0) {
             revert EtherPiggy__InvalidAmount();
         }
@@ -85,10 +78,7 @@ contract EtherPiggy is Ownable {
         emit DepositAlert(_sender, _amount);
     }
 
-    function withdraw(
-        address _accountNumber,
-        uint256 _amount
-    ) external onlyAccountHolder(_accountNumber) {
+    function withdraw(address _accountNumber, uint256 _amount) external onlyAccountHolder(_accountNumber) {
         if (_amount <= 0) {
             revert EtherPiggy__InvalidAmount();
         }
@@ -101,11 +91,9 @@ contract EtherPiggy is Ownable {
         accounts[_accountNumber].totalBalance -= _amount;
 
         // address of account
-        address payable receipient = payable(
-            accounts[_accountNumber].walletAddress
-        );
+        address payable receipient = payable(accounts[_accountNumber].walletAddress);
 
-        (bool success, ) = receipient.call{value: _amount}("");
+        (bool success,) = receipient.call{value: _amount}("");
 
         if (success != true) {
             accounts[_accountNumber].totalBalance += _amount;
@@ -120,9 +108,7 @@ contract EtherPiggy is Ownable {
         return accountNumbersList;
     }
 
-    function getAccountDetails(
-        address _sender
-    )
+    function getAccountDetails(address _sender)
         external
         view
         returns (address walletAddress, uint256 totalBalance, uint256 createdAt)
@@ -145,10 +131,7 @@ contract EtherPiggy is Ownable {
     }
 
     // get amount deposited at a time
-    function getDepositAmountAtGivenTime(
-        address _accountNumber,
-        uint256 _timestamp
-    ) external view returns (uint256) {
+    function getDepositAmountAtGivenTime(address _accountNumber, uint256 _timestamp) external view returns (uint256) {
         if (_accountNumber == address(0)) {
             revert PiggyBank__NotValidAccount();
         }
