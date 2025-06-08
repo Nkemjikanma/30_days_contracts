@@ -28,7 +28,14 @@ contract EngineTest is Test {
         // owner = address(1);
 
         // Deploy contracts using test-friendly method
-        (engine, clickCounter, saveMyName, pollStation, auctionHouse, adminOnly) = deployer.deployForTest(owner);
+        (
+            engine,
+            clickCounter,
+            saveMyName,
+            pollStation,
+            auctionHouse,
+            adminOnly
+        ) = deployer.deployForTest(owner);
 
         // Transfer ownership as the test owner
         vm.startPrank(owner);
@@ -145,7 +152,8 @@ contract EngineTest is Test {
         // check candidate count has increased
         assertEq(pollStation.getTotalCandidates(), initialCandidateCount + 1);
 
-        PollStation.Candidate memory candidate = pollStation.getCandidateDetails(initialCandidateCount);
+        PollStation.Candidate memory candidate = pollStation
+            .getCandidateDetails(initialCandidateCount);
 
         assertEq(candidate.name, name);
         assertEq(candidate.party, party);
@@ -317,7 +325,9 @@ contract EngineTest is Test {
         vm.prank(_seller);
         engine.endAuction(_auctionItemId, _seller);
 
-        (,,,,,,, bool isActive) = auctionHouse.getAuctionDetails(_auctionItemId);
+        (, , , , , , , bool isActive) = auctionHouse.getAuctionDetails(
+            _auctionItemId
+        );
 
         assertEq(isActive, false);
     }
@@ -335,7 +345,9 @@ contract EngineTest is Test {
         assertEq(bids.length, 1);
 
         vm.prank(_seller);
-        vm.expectRevert(AuctionHouse.AuctionHouse__CantCancelAuctionAterBidPlaced.selector);
+        vm.expectRevert(
+            AuctionHouse.AuctionHouse__CantCancelAuctionAterBidPlaced.selector
+        );
         engine.cancelAuction(_auctionItemId, _seller);
     }
 
@@ -348,7 +360,9 @@ contract EngineTest is Test {
         engine.cancelAuction(_auctionItemId, _seller);
 
         // Verify the auction was cancelled
-        (,,,,,,, bool isActive) = auctionHouse.getAuctionDetails(_auctionItemId);
+        (, , , , , , , bool isActive) = auctionHouse.getAuctionDetails(
+            _auctionItemId
+        );
         assertEq(isActive, false);
     }
 
@@ -360,7 +374,13 @@ contract EngineTest is Test {
         uint256 _duration = 1200;
 
         vm.prank(_seller);
-        uint256 _auctionItemId = engine.createAuction(_name, _description, _startingPrice, _duration, _seller);
+        uint256 _auctionItemId = engine.createAuction(
+            _name,
+            _description,
+            _startingPrice,
+            _duration,
+            _seller
+        );
 
         return _auctionItemId;
     }
