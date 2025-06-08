@@ -6,16 +6,19 @@ import {SaveMyName} from "./SaveMyName.sol";
 import {PollStation} from "./PollStation.sol";
 import {AuctionHouse} from "./AuctionHouse.sol";
 import {AdminOnly} from "./AdminOnly.sol";
+import {EtherPiggy} from "./EtherPiggy.sol";
 
 contract Engine {
     error Engine__MissingField();
     error Engine__NotAuthorizedToCallEngine();
+    error Engine__InvalidAmount();
 
     ClickCounter private clickCounter;
     SaveMyName private saveMyName;
     PollStation private pollStation;
     AuctionHouse private auctionHouse;
     AdminOnly private adminOnly;
+    EtherPiggy private etherPiggy;
 
     address public engineOwner;
 
@@ -32,6 +35,7 @@ contract Engine {
         address _pollStation,
         address _auctionHouse,
         address _adminOnly,
+        address _etherPiggy,
         address _engineOwner
     ) {
         clickCounter = ClickCounter(_clickCounter);
@@ -39,6 +43,7 @@ contract Engine {
         pollStation = PollStation(_pollStation);
         auctionHouse = AuctionHouse(_auctionHouse);
         adminOnly = AdminOnly(_adminOnly);
+        etherPiggy = EtherPiggy(payable(_etherPiggy));
 
         engineOwner = _engineOwner;
     }
@@ -206,5 +211,32 @@ contract Engine {
 
     function getOwner() public view returns (address) {
         return adminOnly.getOwner();
+    }
+
+    /**
+     * EtherPiggy *******
+     */
+    // onlyEngineOwner is our manager in this case
+    function addAccount(address _newAccountAddress) public onlyEngineOwner {
+        etherPiggy.addAccount(_newAccountAddress);
+    }
+
+    function deposit(uint256 _amount) public payable {
+        if (msg.value != _amount) {
+            revert Engine__InvalidAmount();
+        }
+        etherPiggy.deposit{value: msg.value}(_amount, msg.sender);
+    }
+
+    function withdraw(uint256 _amount) public {
+        etherPiggy.withdraw(msg.sender, _amount);
+    }
+
+    function getAllAccounts() public view returns (address[] memory) {
+        return etherPiggy.getAllAccounts();
+    }
+
+    function getDepositAmount(uint256 _timestamp, address _accountNumber) public view returns (uint256) {
+        return etherPiggy.getDepositAmountAtGivenTime(_accountNumber, _timestamp);
     }
 }

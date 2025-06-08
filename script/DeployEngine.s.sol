@@ -7,6 +7,7 @@ import {SaveMyName} from "../src/SaveMyName.sol";
 import {PollStation} from "../src/PollStation.sol";
 import {AuctionHouse} from "../src/AuctionHouse.sol";
 import {AdminOnly} from "../src/AdminOnly.sol";
+import {EtherPiggy} from "../src/EtherPiggy.sol";
 import {Engine} from "../src/Engine.sol";
 import {HelperConfig} from "./HelperConfig.s.sol";
 
@@ -15,7 +16,7 @@ contract DeployEngine is Script {
 
     function run()
         external
-        returns (Engine, AdminOnly, AuctionHouse, PollStation, SaveMyName, ClickCounter, HelperConfig)
+        returns (Engine, EtherPiggy, AdminOnly, AuctionHouse, PollStation, SaveMyName, ClickCounter, HelperConfig)
     {
         HelperConfig helperConfig = new HelperConfig();
 
@@ -32,7 +33,8 @@ contract DeployEngine is Script {
             SaveMyName saveMyName,
             PollStation pollStation,
             AuctionHouse auctionHouse,
-            AdminOnly adminOnly
+            AdminOnly adminOnly,
+            EtherPiggy etherPiggy
         ) = deployContracts(owner);
 
         clickCounter.transferOwnership(address(deployedEngine));
@@ -40,16 +42,17 @@ contract DeployEngine is Script {
         pollStation.transferOwnership(address(deployedEngine));
         auctionHouse.transferOwnership(address(deployedEngine));
         adminOnly.transferOwnership(address(deployedEngine));
-
+        etherPiggy.transferOwnership(address(deployedEngine));
         vm.stopBroadcast();
 
-        return (deployedEngine, adminOnly, auctionHouse, pollStation, saveMyName, clickCounter, helperConfig);
+        return
+            (deployedEngine, etherPiggy, adminOnly, auctionHouse, pollStation, saveMyName, clickCounter, helperConfig);
     }
 
     // Test-friendly deployment function - no broadcasting
     function deployForTest(address testOwner)
         external
-        returns (Engine, ClickCounter, SaveMyName, PollStation, AuctionHouse, AdminOnly)
+        returns (Engine, ClickCounter, SaveMyName, PollStation, AuctionHouse, AdminOnly, EtherPiggy)
     {
         return deployContracts(testOwner);
     }
@@ -57,22 +60,24 @@ contract DeployEngine is Script {
     // Internal deployment logic
     function deployContracts(address owner)
         internal
-        returns (Engine, ClickCounter, SaveMyName, PollStation, AuctionHouse, AdminOnly)
+        returns (Engine, ClickCounter, SaveMyName, PollStation, AuctionHouse, AdminOnly, EtherPiggy)
     {
         ClickCounter clickCounter = new ClickCounter(owner);
         SaveMyName saveMyName = new SaveMyName(owner);
         PollStation pollStation = new PollStation(owner);
         AuctionHouse auctionHouse = new AuctionHouse(owner);
         AdminOnly adminOnly = new AdminOnly(owner);
+        EtherPiggy etherPiggy = new EtherPiggy(owner);
         Engine deployedEngine = new Engine(
             address(clickCounter),
             address(saveMyName),
             address(pollStation),
             address(auctionHouse),
             address(adminOnly),
+            address(etherPiggy),
             address(owner)
         );
 
-        return (deployedEngine, clickCounter, saveMyName, pollStation, auctionHouse, adminOnly);
+        return (deployedEngine, clickCounter, saveMyName, pollStation, auctionHouse, adminOnly, etherPiggy);
     }
 }
