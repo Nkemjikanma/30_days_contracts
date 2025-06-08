@@ -65,7 +65,12 @@ contract DeployEngine is Script {
         AuctionHouse auctionHouse = new AuctionHouse(owner);
         AdminOnly adminOnly = new AdminOnly(owner);
         Engine deployedEngine = new Engine(
-            address(clickCounter), address(saveMyName), address(pollStation), address(auctionHouse), address(adminOnly)
+            address(clickCounter),
+            address(saveMyName),
+            address(pollStation),
+            address(auctionHouse),
+            address(adminOnly),
+            address(owner)
         );
 
         return (deployedEngine, clickCounter, saveMyName, pollStation, auctionHouse, adminOnly);

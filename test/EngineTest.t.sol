@@ -21,14 +21,21 @@ contract EngineTest is Test {
     ClickCounter public clickCounter;
     HelperConfig helperConfig;
 
-    address owner = address(1);
+    address owner = vm.envAddress("DEV_ADDRESS");
 
     function setUp() public {
         deployer = new DeployEngine();
         // owner = address(1);
 
         // Deploy contracts using test-friendly method
-        (engine, clickCounter, saveMyName, pollStation, auctionHouse, adminOnly) = deployer.deployForTest(owner);
+        (
+            engine,
+            clickCounter,
+            saveMyName,
+            pollStation,
+            auctionHouse,
+            adminOnly
+        ) = deployer.deployForTest(owner);
 
         // Transfer ownership as the test owner
         vm.startPrank(owner);
@@ -145,7 +152,8 @@ contract EngineTest is Test {
         // check candidate count has increased
         assertEq(pollStation.getTotalCandidates(), initialCandidateCount + 1);
 
-        PollStation.Candidate memory candidate = pollStation.getCandidateDetails(initialCandidateCount);
+        PollStation.Candidate memory candidate = pollStation
+            .getCandidateDetails(initialCandidateCount);
 
         assertEq(candidate.name, name);
         assertEq(candidate.party, party);
@@ -317,7 +325,9 @@ contract EngineTest is Test {
         vm.prank(_seller);
         engine.endAuction(_auctionItemId, _seller);
 
-        (,,,,,,, bool isActive) = auctionHouse.getAuctionDetails(_auctionItemId);
+        (, , , , , , , bool isActive) = auctionHouse.getAuctionDetails(
+            _auctionItemId
+        );
 
         assertEq(isActive, false);
     }
@@ -335,7 +345,9 @@ contract EngineTest is Test {
         assertEq(bids.length, 1);
 
         vm.prank(_seller);
-        vm.expectRevert(AuctionHouse.AuctionHouse__CantCancelAuctionAterBidPlaced.selector);
+        vm.expectRevert(
+            AuctionHouse.AuctionHouse__CantCancelAuctionAterBidPlaced.selector
+        );
         engine.cancelAuction(_auctionItemId, _seller);
     }
 
@@ -348,7 +360,9 @@ contract EngineTest is Test {
         engine.cancelAuction(_auctionItemId, _seller);
 
         // Verify the auction was cancelled
-        (,,,,,,, bool isActive) = auctionHouse.getAuctionDetails(_auctionItemId);
+        (, , , , , , , bool isActive) = auctionHouse.getAuctionDetails(
+            _auctionItemId
+        );
         assertEq(isActive, false);
     }
 
@@ -360,13 +374,67 @@ contract EngineTest is Test {
         uint256 _duration = 1200;
 
         vm.prank(_seller);
-        uint256 _auctionItemId = engine.createAuction(_name, _description, _startingPrice, _duration, _seller);
+        uint256 _auctionItemId = engine.createAuction(
+            _name,
+            _description,
+            _startingPrice,
+            _duration,
+            _seller
+        );
 
         return _auctionItemId;
     }
-}
 
-/**
- * AuctionHouse *******
- */
-// function() {}
+    /**
+     * AuctionHouse *******
+     */
+    function testAddTreasure() public {
+        uint256 amount = 10;
+
+        vm.prank(engine.engineOwner());
+        engine.addTreasure(amount);
+        vm.prank(engine.engineOwner());
+        engine.addTreasure(amount);
+
+        uint256 treasureBalance = engine.getTotalTreasure();
+
+        assertEq(treasureBalance, 20);
+    }
+
+    function testApproveWithdrawal() public {
+        uint256 _amount = 10;
+        address _treasurer = makeAddr("user");
+
+        vm.expectEmit(true, true, false, true);
+        emit AdminOnly.WithdrawalApproved(_amount, _treasurer);
+
+        vm.prank(engine.engineOwner());
+        engine.approveWithdrawal(_amount, _treasurer);
+
+        uint256 allowance = adminOnly.getWithdrawalAllowance(_treasurer);
+        assertEq(allowance, _amount);
+    }
+
+    function testWithdrawTreasure() public {
+        uint256 _amount = 100;
+        address _treasurer = makeAddr("user");
+
+        // add funds to the admin contract
+        vm.deal(address(adminOnly), _amount);
+
+        vm.prank(engine.engineOwner());
+        engine.addTreasure(_amount);
+
+        vm.prank(engine.engineOwner());
+        engine.approveWithdrawal(2, _treasurer);
+
+        vm.deal(_treasurer, 10);
+        vm.prank(_treasurer);
+        engine.withdrawTreasure(2);
+
+        bool hasWithdrawn = adminOnly.hasUserWithdrawn(_treasurer);
+        uint256 balance = adminOnly.getTotalTreasure();
+        assertEq(hasWithdrawn, true);
+        assertEq(balance, 98);
+    }
+}

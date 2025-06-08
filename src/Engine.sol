@@ -9,6 +9,7 @@ import {AdminOnly} from "./AdminOnly.sol";
 
 contract Engine {
     error Engine__MissingField();
+    error Engine__NotAuthorizedToCallEngine();
 
     ClickCounter private clickCounter;
     SaveMyName private saveMyName;
@@ -16,18 +17,30 @@ contract Engine {
     AuctionHouse private auctionHouse;
     AdminOnly private adminOnly;
 
+    address public engineOwner;
+
+    modifier onlyEngineOwner() {
+        if (msg.sender != engineOwner) {
+            revert Engine__NotAuthorizedToCallEngine();
+        }
+        _;
+    }
+
     constructor(
         address _clickCounter,
         address _saveMyName,
         address _pollStation,
         address _auctionHouse,
-        address _adminOnly
+        address _adminOnly,
+        address _engineOwner
     ) {
         clickCounter = ClickCounter(_clickCounter);
         saveMyName = SaveMyName(_saveMyName);
         pollStation = PollStation(_pollStation);
         auctionHouse = AuctionHouse(_auctionHouse);
         adminOnly = AdminOnly(_adminOnly);
+
+        engineOwner = _engineOwner;
     }
 
     /**
@@ -158,12 +171,12 @@ contract Engine {
     /**
      * AdminOnly *******
      */
-    function addTreasure(uint256 _amount) public {
+    function addTreasure(uint256 _amount) public onlyEngineOwner {
         adminOnly.addTreasure(_amount, address(this));
     }
 
-    function approveWithdrawal(uint256 _amount) public {
-        adminOnly.approveWithdrawal(msg.sender, _amount, address(this));
+    function approveWithdrawal(uint256 _amount, address _newTreasurer) public onlyEngineOwner {
+        adminOnly.approveWithdrawal(_newTreasurer, _amount);
     }
 
     function withdrawTreasure(uint256 _amount) public {
@@ -187,11 +200,11 @@ contract Engine {
         return adminOnly.getWithdrawalAllowance(msg.sender);
     }
 
-    function getHasUserWithdrawn() public view returns(bool) {
+    function getHasUserWithdrawn() public view returns (bool) {
         return adminOnly.hasUserWithdrawn(msg.sender);
     }
 
-    function getOwner() public view returns(address) {
+    function getOwner() public view returns (address) {
         return adminOnly.getOwner();
     }
 }
