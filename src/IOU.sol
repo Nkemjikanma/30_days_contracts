@@ -11,6 +11,7 @@ contract IOU is Ownable {
         uint256 timestamp;
         bool isSettled;
     }
+
     struct Friend {
         uint256 totalDeposited;
         uint256 availableBalance;
