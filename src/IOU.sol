@@ -16,7 +16,6 @@ contract IOU is Ownable {
         ACCEPTED, // Creditor has approved the debt
         REJECTED, // Creditor has rejected the debt
         SETTLED // Debt has been paid
-
     }
 
     struct Debt {
@@ -68,8 +67,16 @@ contract IOU is Ownable {
 
     event NewMemberCreated(address indexed _newMember);
     event Deposited(address indexed _member, uint256 _amount);
-    event DebtStatusChanged(uint256 debtId, address indexed _user, bool _isApproved);
-    event DebtSettled(address indexed _user, address _creditor, uint256 _amount);
+    event DebtStatusChanged(
+        uint256 debtId,
+        address indexed _user,
+        bool _isApproved
+    );
+    event DebtSettled(
+        address indexed _user,
+        address _creditor,
+        uint256 _amount
+    );
 
     constructor(address _initialOwner) Ownable(_initialOwner) {}
 
@@ -87,7 +94,10 @@ contract IOU is Ownable {
         }
     }
 
-    function deposit(address _memberAddress, uint256 _amount) external payable checkMember(_memberAddress) {
+    function deposit(
+        address _memberAddress,
+        uint256 _amount
+    ) external payable checkMember(_memberAddress) {
         if (_amount <= 0) {
             revert IOU_InvalidAmount();
         }
@@ -101,10 +111,12 @@ contract IOU is Ownable {
     }
 
     //
-    function createDebt(address _creditor, address _debtor, uint256 _amount, string calldata _desc)
-        external
-        checkMember(_creditor)
-    {
+    function createDebt(
+        address _creditor,
+        address _debtor,
+        uint256 _amount,
+        string calldata _desc
+    ) external checkMember(_creditor) {
         if (!isMember[_debtor]) {
             revert IOU_CreditorIsNotAMember();
         }
@@ -148,7 +160,11 @@ contract IOU is Ownable {
         friendGroup[_debtor].totalOwed += _amount;
     }
 
-    function respondToDebtClaim(address _user, uint256 _debtId, bool _isApproved) public checkMember(_user) {
+    function respondToDebtClaim(
+        address _user,
+        uint256 _debtId,
+        bool _isApproved
+    ) public checkMember(_user) {
         uint256 pendingIndex = type(uint256).max;
 
         // get pending debt
@@ -169,7 +185,9 @@ contract IOU is Ownable {
             revert IOU__InvalidDebtId();
         }
 
-        debtItem.status = _isApproved ? DebtStatus.ACCEPTED : DebtStatus.REJECTED;
+        debtItem.status = _isApproved
+            ? DebtStatus.ACCEPTED
+            : DebtStatus.REJECTED;
 
         if (!_isApproved) {
             friendGroup[_user].totalOwed -= debtItem.amount;
@@ -179,17 +197,21 @@ contract IOU is Ownable {
         // Remove from pending list (swap and pop for gas efficiency)
         uint256 lastIndex = pendingDebtsToApprove[msg.sender].length - 1;
         if (pendingIndex < lastIndex) {
-            pendingDebtsToApprove[_user][pendingIndex] = pendingDebtsToApprove[_user][lastIndex];
+            pendingDebtsToApprove[_user][pendingIndex] = pendingDebtsToApprove[
+                _user
+            ][lastIndex];
         }
         pendingDebtsToApprove[_user].pop();
 
         emit DebtStatusChanged(_debtId, _user, _isApproved);
     }
 
-    function settleDebt(address _user, address _creditor, uint256 _debtId, uint256 _amount)
-        external
-        checkMember(_user)
-    {
+    function settleDebt(
+        address _user,
+        address _creditor,
+        uint256 _debtId,
+        uint256 _amount
+    ) external payable checkMember(_user) {
         if (!isMember[_creditor]) {
             revert IOU_CreditorIsNotAMember();
         }
@@ -233,14 +255,20 @@ contract IOU is Ownable {
         emit DebtSettled(_user, _creditor, _amount);
     }
 
-    function updateDebtMappings(address _debtor, address _creditor, uint256 _debtId, uint256 _amount) internal {
+    function updateDebtMappings(
+        address _debtor,
+        address _creditor,
+        uint256 _debtId,
+        uint256 _amount
+    ) internal {
         // updated debtsIOwe
         for (uint256 i = 0; i < debtsIOwe[_debtor][_creditor].length; i++) {
             if (debtsIOwe[_debtor][_creditor][i].debtId == _debtId) {
                 debtsIOwe[_debtor][_creditor][i].amount -= _amount;
 
                 if (debtsIOwe[_debtor][_creditor][i].amount == 0) {
-                    debtsIOwe[_debtor][_creditor][i].status = DebtStatus.SETTLED;
+                    debtsIOwe[_debtor][_creditor][i].status = DebtStatus
+                        .SETTLED;
                 }
                 break;
             }
@@ -250,7 +278,8 @@ contract IOU is Ownable {
             if (debtsOwedToMe[_creditor][_debtor][i].debtId == _debtId) {
                 debtsOwedToMe[_creditor][_debtor][i].amount -= _amount;
                 if (debtsOwedToMe[_creditor][_debtor][i].amount == 0) {
-                    debtsOwedToMe[_creditor][_debtor][i].status = DebtStatus.SETTLED;
+                    debtsOwedToMe[_creditor][_debtor][i].status = DebtStatus
+                        .SETTLED;
                 }
                 break;
             }
