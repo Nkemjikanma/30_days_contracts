@@ -11,10 +11,12 @@ import {PollStation} from "../src/PollStation.sol";
 import {AuctionHouse} from "../src/AuctionHouse.sol";
 import {AdminOnly} from "../src/AdminOnly.sol";
 import {EtherPiggy} from "../src/EtherPiggy.sol";
+import {IOU} from "../src/IOU.sol";
 
 contract EngineTest is Test {
     DeployEngine deployer;
     Engine engine;
+    IOU iOU;
     EtherPiggy etherPiggy;
     AdminOnly adminOnly;
     AuctionHouse auctionHouse;
@@ -30,7 +32,7 @@ contract EngineTest is Test {
         // owner = address(1);
 
         // Deploy contracts using test-friendly method
-        (engine, clickCounter, saveMyName, pollStation, auctionHouse, adminOnly, etherPiggy) =
+        (engine, clickCounter, saveMyName, pollStation, auctionHouse, adminOnly, etherPiggy, iOU) =
             deployer.deployForTest(owner);
 
         // Transfer ownership as the test owner
@@ -41,6 +43,7 @@ contract EngineTest is Test {
         auctionHouse.transferOwnership(address(engine));
         adminOnly.transferOwnership(address(engine));
         etherPiggy.transferOwnership(address(engine));
+        iOU.transferOwnership(address(engine));
         vm.stopPrank();
     }
 

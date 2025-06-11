@@ -7,11 +7,13 @@ import {PollStation} from "./PollStation.sol";
 import {AuctionHouse} from "./AuctionHouse.sol";
 import {AdminOnly} from "./AdminOnly.sol";
 import {EtherPiggy} from "./EtherPiggy.sol";
+import {IOU} from "./IOU.sol";
 
 contract Engine {
     error Engine__MissingField();
     error Engine__NotAuthorizedToCallEngine();
     error Engine__InvalidAmount();
+    error Engine__InvalidAddress();
 
     ClickCounter private clickCounter;
     SaveMyName private saveMyName;
@@ -19,6 +21,7 @@ contract Engine {
     AuctionHouse private auctionHouse;
     AdminOnly private adminOnly;
     EtherPiggy private etherPiggy;
+    IOU private iOU;
 
     address public engineOwner;
 
@@ -36,7 +39,8 @@ contract Engine {
         address _auctionHouse,
         address _adminOnly,
         address _etherPiggy,
-        address _engineOwner
+        address _engineOwner,
+        address _iOU
     ) {
         clickCounter = ClickCounter(_clickCounter);
         saveMyName = SaveMyName(_saveMyName);
@@ -44,6 +48,7 @@ contract Engine {
         auctionHouse = AuctionHouse(_auctionHouse);
         adminOnly = AdminOnly(_adminOnly);
         etherPiggy = EtherPiggy(payable(_etherPiggy));
+        iOU = IOU(payable(_iOU));
 
         engineOwner = _engineOwner;
     }
@@ -238,5 +243,47 @@ contract Engine {
 
     function getDepositAmount(uint256 _timestamp, address _accountNumber) public view returns (uint256) {
         return etherPiggy.getDepositAmountAtGivenTime(_accountNumber, _timestamp);
+    }
+
+    /**
+     * IOU *******
+     */
+    function addMember(address _newMember) public onlyEngineOwner {
+        if (_newMember == address(0)) {
+            revert Engine__InvalidAddress();
+        }
+        iOU.addMember(_newMember);
+    }
+
+    function iOUDepost(uint256 _amount) public payable {
+        if (msg.value != _amount) {
+            revert Engine__InvalidAmount();
+        }
+
+        iOU.deposit{value: msg.value}(msg.sender, _amount);
+    }
+
+    function createDebt(address _debtor, uint256 _amount, string calldata _desc) public {
+        iOU.createDebt(msg.sender, _debtor, _amount, _desc);
+    }
+
+    function respondToDebt(uint256 _debtId, bool _isApproved) public {
+        iOU.respondToDebtClaim(msg.sender, _debtId, _isApproved);
+    }
+
+    function settleDebt(address _creditor, uint56 _debtId, uint256 _amount) public payable {
+        if (msg.value != _amount) {
+            revert Engine__InvalidAmount();
+        }
+
+        iOU.settleDebt{value: msg.value}(msg.sender, _creditor, _debtId, _amount);
+    }
+
+    function getMyDebts() public view returns (IOU.Debt[] memory) {
+        iOU.getMyDebts(msg.sender);
+    }
+
+    function getDebtsOwedToMe() public view returns (IOU.Debt[] memory) {
+        iOU.getDebtsOwedToMe(msg.sender);
     }
 }
