@@ -1,4 +1,4 @@
-//SPDX-License-identifier: MIT
+//SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
@@ -10,12 +10,15 @@ contract IOU is Ownable {
     error IOU__CantOweSelf();
     error IOU__InvalidDebtId();
     error IOU__PayingBackTooMuch();
+    error IOU_DEBTALREADYSETTLED();
+    error IOU_DEBTNOTACCEPTED();
 
     enum DebtStatus {
         PENDING, // Initial state when a debt is requested
         ACCEPTED, // Creditor has approved the debt
         REJECTED, // Creditor has rejected the debt
         SETTLED // Debt has been paid
+
     }
 
     struct Debt {
@@ -67,16 +70,8 @@ contract IOU is Ownable {
 
     event NewMemberCreated(address indexed _newMember);
     event Deposited(address indexed _member, uint256 _amount);
-    event DebtStatusChanged(
-        uint256 debtId,
-        address indexed _user,
-        bool _isApproved
-    );
-    event DebtSettled(
-        address indexed _user,
-        address _creditor,
-        uint256 _amount
-    );
+    event DebtStatusChanged(uint256 debtId, address indexed _user, bool _isApproved);
+    event DebtSettled(address indexed _user, address _creditor, uint256 _amount);
 
     constructor(address _initialOwner) Ownable(_initialOwner) {}
 
@@ -94,10 +89,7 @@ contract IOU is Ownable {
         }
     }
 
-    function deposit(
-        address _memberAddress,
-        uint256 _amount
-    ) external payable checkMember(_memberAddress) {
+    function deposit(address _memberAddress, uint256 _amount) external payable checkMember(_memberAddress) {
         if (_amount <= 0) {
             revert IOU_InvalidAmount();
         }
@@ -111,12 +103,10 @@ contract IOU is Ownable {
     }
 
     //
-    function createDebt(
-        address _creditor,
-        address _debtor,
-        uint256 _amount,
-        string calldata _desc
-    ) external checkMember(_creditor) {
+    function createDebt(address _creditor, address _debtor, uint256 _amount, string calldata _desc)
+        external
+        checkMember(_creditor)
+    {
         if (!isMember[_debtor]) {
             revert IOU_CreditorIsNotAMember();
         }
@@ -160,11 +150,7 @@ contract IOU is Ownable {
         friendGroup[_debtor].totalOwed += _amount;
     }
 
-    function respondToDebtClaim(
-        address _user,
-        uint256 _debtId,
-        bool _isApproved
-    ) public checkMember(_user) {
+    function respondToDebtClaim(address _user, uint256 _debtId, bool _isApproved) public checkMember(_user) {
         uint256 pendingIndex = type(uint256).max;
 
         // get pending debt
@@ -185,9 +171,7 @@ contract IOU is Ownable {
             revert IOU__InvalidDebtId();
         }
 
-        debtItem.status = _isApproved
-            ? DebtStatus.ACCEPTED
-            : DebtStatus.REJECTED;
+        debtItem.status = _isApproved ? DebtStatus.ACCEPTED : DebtStatus.REJECTED;
 
         if (!_isApproved) {
             friendGroup[_user].totalOwed -= debtItem.amount;
@@ -197,21 +181,18 @@ contract IOU is Ownable {
         // Remove from pending list (swap and pop for gas efficiency)
         uint256 lastIndex = pendingDebtsToApprove[msg.sender].length - 1;
         if (pendingIndex < lastIndex) {
-            pendingDebtsToApprove[_user][pendingIndex] = pendingDebtsToApprove[
-                _user
-            ][lastIndex];
+            pendingDebtsToApprove[_user][pendingIndex] = pendingDebtsToApprove[_user][lastIndex];
         }
         pendingDebtsToApprove[_user].pop();
 
         emit DebtStatusChanged(_debtId, _user, _isApproved);
     }
 
-    function settleDebt(
-        address _user,
-        address _creditor,
-        uint256 _debtId,
-        uint256 _amount
-    ) external payable checkMember(_user) {
+    function settleDebt(address _user, address _creditor, uint256 _debtId, uint256 _amount)
+        external
+        payable
+        checkMember(_user)
+    {
         if (!isMember[_creditor]) {
             revert IOU_CreditorIsNotAMember();
         }
@@ -228,6 +209,10 @@ contract IOU is Ownable {
 
         if (_amount > debtItem.amount) {
             revert IOU__PayingBackTooMuch();
+        }
+
+        if (debtItem.status != DebtStatus.ACCEPTED) {
+            revert IOU_DEBTNOTACCEPTED();
         }
 
         // Check if user has enough balance
@@ -255,20 +240,14 @@ contract IOU is Ownable {
         emit DebtSettled(_user, _creditor, _amount);
     }
 
-    function updateDebtMappings(
-        address _debtor,
-        address _creditor,
-        uint256 _debtId,
-        uint256 _amount
-    ) internal {
+    function updateDebtMappings(address _debtor, address _creditor, uint256 _debtId, uint256 _amount) internal {
         // updated debtsIOwe
         for (uint256 i = 0; i < debtsIOwe[_debtor][_creditor].length; i++) {
             if (debtsIOwe[_debtor][_creditor][i].debtId == _debtId) {
                 debtsIOwe[_debtor][_creditor][i].amount -= _amount;
 
                 if (debtsIOwe[_debtor][_creditor][i].amount == 0) {
-                    debtsIOwe[_debtor][_creditor][i].status = DebtStatus
-                        .SETTLED;
+                    debtsIOwe[_debtor][_creditor][i].status = DebtStatus.SETTLED;
                 }
                 break;
             }
@@ -278,11 +257,68 @@ contract IOU is Ownable {
             if (debtsOwedToMe[_creditor][_debtor][i].debtId == _debtId) {
                 debtsOwedToMe[_creditor][_debtor][i].amount -= _amount;
                 if (debtsOwedToMe[_creditor][_debtor][i].amount == 0) {
-                    debtsOwedToMe[_creditor][_debtor][i].status = DebtStatus
-                        .SETTLED;
+                    debtsOwedToMe[_creditor][_debtor][i].status = DebtStatus.SETTLED;
                 }
                 break;
             }
         }
+    }
+
+    function getMyDebts(address _user) external view checkMember(_user) returns (Debt[] memory) {
+        // count number of debts
+        uint256 totalDebts = 0;
+
+        for (uint256 i = 0; i < members.length; i++) {
+            address creditor = members[i];
+
+            if (creditor != _user) {
+                // skip self
+                totalDebts += debtsIOwe[_user][creditor].length;
+            }
+        }
+
+        Debt[] memory usersDebts = new Debt[](totalDebts);
+
+        // fill in the array with the debts
+        uint256 currentIndex = 0;
+        for (uint256 i = 0; i < members.length; i++) {
+            address creditor = members[i];
+
+            if (creditor != _user) {
+                for (uint256 j = 0; j < debtsIOwe[_user][creditor].length; j++) {
+                    usersDebts[currentIndex] = debtsIOwe[_user][creditor][j];
+                    currentIndex++;
+                }
+            }
+        }
+
+        return usersDebts;
+    }
+
+    function getDebtsOwedToMe(address _user) external view checkMember(_user) returns (Debt[] memory) {
+        uint256 totalDebts = 0;
+
+        for (uint256 i = 0; i < members.length; i++) {
+            address debtor = members[i];
+            if (debtor != _user) {
+                totalDebts += debtsOwedToMe[_user][debtor].length;
+            }
+        }
+
+        Debt[] memory usersReceivables = new Debt[](totalDebts);
+
+        uint256 currentIndex = 0;
+        for (uint256 i = 0; i < members.length; i++) {
+            address debtor = members[i];
+            if (debtor != _user) {
+                Debt[] storage individualDebts = debtsOwedToMe[_user][debtor];
+                for (uint256 j = 0; j < individualDebts.length; j++) {
+                    usersReceivables[currentIndex] = individualDebts[j];
+                    currentIndex++;
+                }
+            }
+        }
+
+        return usersReceivables;
     }
 }
